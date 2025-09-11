@@ -76,6 +76,7 @@ class SimpleRailwayOptimizer:
                 # Extract solution
                 optimized_movements = []
                 total_delay_before = sum(m.delay_minutes for m in movements)
+                print("total delay befor", total_delay_before)
                 total_delay_after = 0
                 
                 for i, movement in enumerate(movements):

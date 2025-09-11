@@ -68,6 +68,7 @@ const TrainTable: React.FC<TrainTableProps> = ({
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {(isOptimized ? optimizedMovements : movements).map((movement, index) => {
+                const uniqueKey = `${movement.train_id}-${index}-${isOptimized ? 'opt' : 'orig'}`;
               const isOptimizedMovement = 'optimized_departure' in movement;
               const departure = isOptimizedMovement ? 
                 movement.optimized_departure : movement.scheduled_departure_hour;
@@ -77,7 +78,7 @@ const TrainTable: React.FC<TrainTableProps> = ({
                 movement.optimized_delay : movement.delay_minutes;
               
               return (
-                <tr key={index} className="hover:bg-gray-50">
+                <tr key={uniqueKey} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
                       {getTrainName(movement.train_id)}
