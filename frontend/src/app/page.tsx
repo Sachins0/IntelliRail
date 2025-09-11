@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { Train, Station, TrainMovement, OptimizedMovement, OptimizationResult } from '@/lib/types';
 import { railwayApi } from '@/lib/api';
-import MetricsPanel from '@/components/dashboard/MetricsPanel';
-import TrainTable from '@/components/dashboard/TrainTable';
+import MetricsPanel from '@/components/MetricsPanel';
+import TrainTable from '@/components/TrainTable';
 import { PlayIcon, RefreshCwIcon, ZapIcon } from 'lucide-react';
 
 export default function Dashboard() {
