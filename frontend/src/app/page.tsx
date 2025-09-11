@@ -40,22 +40,32 @@ export default function FinalDashboard() {
    const [activeTab, setActiveTab] = useState<string>('overview');
   const [showAIAssistant, setShowAIAssistant] = useState(false);
 
-  // Load initial data
- useEffect(() => {
+useEffect(() => {
   console.log('Component mounted, starting initialization...');
-  loadScenarios();
   
-  // Add a timeout fallback
-  const timeout = setTimeout(() => {
-    if (loading) {
-      console.warn('Loading timed out, setting fallback state');
+  const initializeApp = async () => {
+    try {
+      await loadScenarios();
+    } catch (error) {
+      console.error('App initialization failed:', error);
+      setError('Failed to initialize application');
       setLoading(false);
-      setError('Loading timed out. Please refresh the page.');
     }
-  }, 10000); // 10 second timeout
+  };
   
-  return () => clearTimeout(timeout);
-}, []); // Empty dependency array - runs once on mount
+  // Start initialization
+  initializeApp();
+  
+  // Emergency fallback timeout
+  const emergencyTimeout = setTimeout(() => {
+    console.warn('Emergency timeout triggered');
+    setLoading(false);
+    setError('Loading took too long. Some features may not work properly.');
+  }, 20000); // 20 seconds
+  
+  return () => clearTimeout(emergencyTimeout);
+}, []); // Empty dependency array is crucial
+
 
 
   const handleWhatIfScenario = async (whatIfData: any) => {
@@ -126,10 +136,10 @@ export default function FinalDashboard() {
     }
   }, [isSimulating]);
 
-   const loadScenarioData = async (scenarioType: string) => {
+const loadScenarioData = async (scenarioType: string) => {
   try {
     console.log("Loading scenario:", scenarioType);
-    setError(''); // Clear any previous errors
+    setError(''); // Clear previous errors
     
     const response = await fetch('http://localhost:8000/api/generate-scenario', {
       method: 'POST',
@@ -138,22 +148,27 @@ export default function FinalDashboard() {
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to load scenario: ${response.status}`);
+      throw new Error(`HTTP ${response.status}: Failed to load scenario`);
     }
     
     const data = await response.json();
     console.log("Scenario data loaded:", data);
     
-    setTrains(data.trains);
-    setStations(data.stations);
-    setMovements(data.movements);
+    setTrains(data.trains || []);
+    setStations(data.stations || []);
+    setMovements(data.movements || []);
     setSelectedScenario(scenarioType);
     setIsOptimized(false);
     setOptimizationResult(null);
     
   } catch (err) {
     console.error('Scenario loading error:', err);
-    setError(`Failed to load scenario: ${scenarioType}`);
+    setError(`Failed to load scenario: ${scenarioType}. ${err.message}`);
+    
+    // Set empty arrays to prevent crashes
+    setTrains([]);
+    setStations([]);
+    setMovements([]);
   } finally {
     setLoading(false); // Always set loading to false
   }
@@ -173,7 +188,7 @@ const loadScenarios = async () => {
     console.log('Scenarios loaded:', data.scenarios);
     setScenarios(data.scenarios);
     
-    // Load default scenario data
+    // Load default scenario immediately
     if (data.scenarios.length > 0) {
       await loadScenarioData('normal');
     }
@@ -181,18 +196,16 @@ const loadScenarios = async () => {
     console.error('Failed to load scenarios:', error);
     setError('Failed to connect to backend. Please ensure the server is running.');
     
-    // Set fallback data so app doesn't stay stuck
-    setScenarios([
-      {
-        id: 'normal',
-        name: 'Normal Operations',
-        description: 'Regular railway operations',
-        difficulty: 'Easy',
-        expected_improvement: '15-25%'
-      }
-    ]);
+    // Set fallback data to prevent infinite loading
+    setScenarios([{
+      id: 'normal',
+      name: 'Demo Mode',
+      description: 'Fallback demo data',
+      difficulty: 'Easy',
+      expected_improvement: '20%'
+    }]);
     
-    // Load some default data
+    // Load some basic fallback data
     setTrains([]);
     setStations([]);
     setMovements([]);
@@ -201,37 +214,38 @@ const loadScenarios = async () => {
   }
 };
 
-  const runAdvancedOptimization = async () => {
-    try {
-      setIsOptimizing(true);
-      setError('');
-      
-      const response = await fetch('http://localhost:8000/api/advanced-optimize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          trains,
-          stations,
-          movements
-        })
-      });
-      
-      const result = await response.json();
-      
-      if (result.status === 'success') {
-        setOptimizedMovements(result.movements);
-        setOptimizationResult(result);
-        setIsOptimized(true);
-      } else {
-        setError(`Optimization failed: ${result.message}`);
-      }
-    } catch (err) {
-      setError('Advanced optimization failed. Check backend connection.');
-      console.error('Optimization error:', err);
-    } finally {
-      setIsOptimizing(false);
+const runAdvancedOptimization = async () => {
+  try {
+    setIsOptimizing(true);
+    setError('');
+    if (!trains.length || !stations.length || !movements.length) {
+      throw new Error('No data available. Load a scenario first.');
     }
-  };
+    const res = await fetch('http://localhost:8000/api/optimize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trains, stations, movements })
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`HTTP ${res.status}: ${text}`);
+    }
+    const result = await res.json();
+    if (result.status !== 'success') {
+      throw new Error(result.message || 'Unknown optimization error');
+    }
+    setOptimizedMovements(result.movements || []);
+    setOptimizationResult(result);
+    setIsOptimized(true);
+  } catch (e: any) {
+    console.error('Advanced Optimization failed:', e);
+    setError(`Advanced Optimization failed: ${e.message}`);
+  } finally {
+    setIsOptimizing(false);
+  }
+};
+
+
 
   const toggleSimulation = () => {
     setIsSimulating(!isSimulating);

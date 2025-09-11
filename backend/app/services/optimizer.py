@@ -2,7 +2,10 @@ from ortools.sat.python import cp_model
 from typing import List, Dict
 from app.models.train import OptimizationRequest
 
+PRIORITY_WEIGHT = {"HIGH": 3, "MEDIUM": 2, "LOW": 1}
+
 class SimpleRailwayOptimizer:
+    print("SimpleRailwayOptimizer initialized")
     def __init__(self):
         self.model = None
         self.solver = None
@@ -61,7 +64,7 @@ class SimpleRailwayOptimizer:
                 
                 # Calculate delay
                 delay = departure_vars[i] - scheduled_hour
-                weight = train.priority.value  # Higher priority = higher weight
+                weight = PRIORITY_WEIGHT.get(train.priority, 2)  # Higher priority = higher weight
                 delay_terms.append(weight * delay)
             
             self.model.Minimize(sum(delay_terms))

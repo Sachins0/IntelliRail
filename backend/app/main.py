@@ -12,10 +12,14 @@ from app.services.optimizer import SimpleRailwayOptimizer
 
 from app.services.data_generator import AdvancedDataGenerator
 import random
+from app.services.advanced_optimizer import AdvancedRailwayOptimizer
+
 
 
 # Initialize the advanced data generator
 advanced_generator = AdvancedDataGenerator()
+advanced_optimizer = AdvancedRailwayOptimizer()
+
 
 class ConnectionManager:
     def __init__(self):
@@ -184,6 +188,15 @@ async def generate_scenario(request: dict):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Scenario generation failed: {str(e)}")
+
+@app.post("/api/advanced-optimize")
+async def advanced_optimize(request: OptimizationRequest):
+    try:
+        result = advanced_optimizer.multi_objective_optimize(request)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Advanced optimization failed: {e}")
+
 
 
 if __name__ == "__main__":

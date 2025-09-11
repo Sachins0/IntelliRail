@@ -399,7 +399,8 @@ class RailwayOptimizer:
             
             # Weight by train priority
             train = trains[movement.train_id]
-            weight = train.priority.value
+            weight = PRIORITY_WEIGHT.get(train.priority, 2)
+
             
             objective_terms.append(weight * delay)
         
